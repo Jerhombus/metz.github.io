@@ -8,11 +8,17 @@ import {
 } from "@remix-run/react";
 import GlowButton from "../components/GlowButton";
 import ProductCard from "../components/ProductCard";
-import {getStorefront, QUERIES, StorefrontConfigError} from "../lib/shopify.server";
+import StorefrontCredentialNotice from "../components/StorefrontCredentialNotice";
+import {
+  getStorefront,
+  QUERIES,
+  storefrontStatusFromError,
+  type StorefrontStatus,
+} from "../lib/shopify.server";
 
 type LoaderData = {
   products: any[];
-  storefrontStatus: {ok: true} | {ok: false; message: string};
+  storefrontStatus: StorefrontStatus;
 };
 
 export async function loader() {
@@ -25,10 +31,11 @@ export async function loader() {
 
     return json<LoaderData>({products, storefrontStatus: {ok: true}});
   } catch (error) {
-    if (error instanceof StorefrontConfigError) {
+    const storefrontStatus = storefrontStatusFromError(error);
+    if (storefrontStatus) {
       return json<LoaderData>({
         products: [],
-        storefrontStatus: {ok: false, message: error.message},
+        storefrontStatus,
       });
     }
 
@@ -60,13 +67,20 @@ export default function Index() {
         </div>
       </div>
       {!storefrontStatus.ok ? (
-        <div className="mx-auto mb-6 max-w-2xl rounded-lg border border-ember/40 bg-ink/70 p-4 text-left text-sm text-mist">
-          <p className="font-semibold text-ember">Storefront credentials missing</p>
-          <p className="mt-1 text-mist/80">
-            {storefrontStatus.message} Restart the dev server after updating your environment
-            variables.
-          </p>
-        </div>
+        <StorefrontCredentialNotice
+          className="mx-auto mb-6 max-w-2xl"
+          message={`${storefrontStatus.message} Restart the dev server after updating your environment variables.`}
+          actions={
+            <>
+              <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+                PUBLIC_STORE_DOMAIN
+              </code>
+              <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+                PUBLIC_STOREFRONT_API_TOKEN
+              </code>
+            </>
+          }
+        />
       ) : null}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p: any) => (

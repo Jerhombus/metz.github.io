@@ -5,11 +5,17 @@ import {
   useLoaderData,
   useRouteError,
 } from "@remix-run/react";
-import {getStorefront, QUERIES, StorefrontConfigError} from "../lib/shopify.server";
+import StorefrontCredentialNotice from "../components/StorefrontCredentialNotice";
+import {
+  getStorefront,
+  QUERIES,
+  storefrontStatusFromError,
+  type StorefrontStatus,
+} from "../lib/shopify.server";
 
 type LoaderData = {
   product: any | null;
-  storefrontStatus: {ok: true} | {ok: false; message: string};
+  storefrontStatus: StorefrontStatus;
 };
 
 export async function loader({params}: LoaderFunctionArgs) {
@@ -30,10 +36,11 @@ export async function loader({params}: LoaderFunctionArgs) {
 
     return json<LoaderData>({product: data.product, storefrontStatus: {ok: true}});
   } catch (error) {
-    if (error instanceof StorefrontConfigError) {
+    const storefrontStatus = storefrontStatusFromError(error);
+    if (storefrontStatus) {
       return json<LoaderData>({
         product: null,
-        storefrontStatus: {ok: false, message: error.message},
+        storefrontStatus,
       });
     }
 
@@ -46,12 +53,20 @@ export default function ProductHandle() {
 
   if (!storefrontStatus.ok) {
     return (
-      <section className="rounded-lg border border-ember/40 bg-ink/70 p-6 text-sm text-mist">
-        <h1 className="font-display text-2xl text-ember">Storefront credentials missing</h1>
-        <p className="mt-2 text-mist/80">
-          {storefrontStatus.message} Configure the variables, then reload to view product details.
-        </p>
-      </section>
+      <StorefrontCredentialNotice
+        title="Storefront credentials missing"
+        message={`${storefrontStatus.message} Configure the variables, then reload to view product details.`}
+        actions={
+          <>
+            <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+              PUBLIC_STORE_DOMAIN
+            </code>
+            <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+              PUBLIC_STOREFRONT_API_TOKEN
+            </code>
+          </>
+        }
+      />
     );
   }
 

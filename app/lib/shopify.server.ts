@@ -34,7 +34,9 @@ function getStorefrontConfig() {
   } as const;
 }
 
-export function getStorefront() {
+export type StorefrontStatus = {ok: true} | {ok: false; message: string};
+
+export function getStorefront(_request?: Request) {
   const config = getStorefrontConfig();
 
   return createStorefrontClient({
@@ -43,6 +45,14 @@ export function getStorefront() {
     storeDomain: config.storeDomain,
     storefrontApiVersion: config.storefrontApiVersion,
   });
+}
+
+export function storefrontStatusFromError(error: unknown): StorefrontStatus | null {
+  if (error instanceof StorefrontConfigError) {
+    return {ok: false, message: error.message};
+  }
+
+  return null;
 }
 
 export const QUERIES = {

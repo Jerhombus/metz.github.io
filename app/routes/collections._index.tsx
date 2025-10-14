@@ -5,12 +5,17 @@ import {
   useLoaderData,
   useRouteError,
 } from "@remix-run/react";
-import {getStorefront, StorefrontConfigError} from "../lib/shopify.server";
+import StorefrontCredentialNotice from "../components/StorefrontCredentialNotice";
+import {
+  getStorefront,
+  storefrontStatusFromError,
+  type StorefrontStatus,
+} from "../lib/shopify.server";
 
 type LoaderData = {
   collections: any[];
   products: any[];
-  storefrontStatus: {ok: true} | {ok: false; message: string};
+  storefrontStatus: StorefrontStatus;
 };
 
 export async function loader() {
@@ -44,11 +49,12 @@ export async function loader() {
       storefrontStatus: {ok: true},
     });
   } catch (error) {
-    if (error instanceof StorefrontConfigError) {
+    const storefrontStatus = storefrontStatusFromError(error);
+    if (storefrontStatus) {
       return json<LoaderData>({
         collections: [],
         products: [],
-        storefrontStatus: {ok: false, message: error.message},
+        storefrontStatus,
       });
     }
 
@@ -61,13 +67,19 @@ export default function Collections() {
   return (
     <div className="space-y-6">
       {!storefrontStatus.ok ? (
-        <div className="rounded-lg border border-ember/40 bg-ink/70 p-4 text-sm text-mist">
-          <p className="font-semibold text-ember">Storefront credentials missing</p>
-          <p className="mt-1 text-mist/80">
-            {storefrontStatus.message} Update your environment variables to explore the collection
-            grid.
-          </p>
-        </div>
+        <StorefrontCredentialNotice
+          message={`${storefrontStatus.message} Update your environment variables to explore the collection grid.`}
+          actions={
+            <>
+              <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+                PUBLIC_STORE_DOMAIN
+              </code>
+              <code className="rounded bg-night px-2 py-1 font-mono text-xs text-mist/70">
+                PUBLIC_STOREFRONT_API_TOKEN
+              </code>
+            </>
+          }
+        />
       ) : null}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p: any) => (
