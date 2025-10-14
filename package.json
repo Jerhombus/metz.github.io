@@ -1,7 +1,6 @@
 {
   "name": "luna-cauldron-storefront",
   "private": true,
-  "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=18"
