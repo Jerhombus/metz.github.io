@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: theme('colors.night');
+  color: theme('colors.moon');
+}
+
+/* Focus rings */
+:focus-visible { outline: 2px solid #3E6FFF; outline-offset: 2px; }
+
+/* Smooth scroll for vibe */
+html { scroll-behavior: smooth; }
